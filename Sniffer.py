@@ -85,7 +85,7 @@ class SnifferThread(QtCore.QObject):
         print('received start signal from window.')
         while self._isRunning:
             with self._lock:
-                sniff(iface=self.interface, filter="src port 1500", prn=self.getPacket, count=1)
+                sniff(iface=self.interface, filter="src port 1500", prn=self.getPacket, timeout=0.5, count=1)
 
     def stop(self):
         self._isRunning = False
@@ -144,6 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.worker.receivedPacketSignal.connect(receivedPacket)  # Connect your signals/slots
         self.worker.threadFinishedSignal.connect(receivedThreadFinished)  # Connect your signals/slots
         self.worker.moveToThread(self.workerThread)
+        self.workerThread.setTerminationEnabled(True)
 
     def connect(self):
         self.workerThread.start()
