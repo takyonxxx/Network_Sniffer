@@ -4,10 +4,15 @@ from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 
 
+class CrawlerItem(scrapy.Item):
+    referer = scrapy.Field()
+    file_urls = scrapy.Field()
+
+
 class LinkCheckerSpider(scrapy.Spider):
     name = 'link_checker'
 
-    def __init__(self, url='https://github.com/takyonxxx?tab=repositories', *args, **kwargs):
+    def __init__(self, url='https://github.com/takyonxxx/Network_Sniffer', *args, **kwargs):
         super(LinkCheckerSpider, self).__init__(*args, **kwargs)
         self.start_urls = [url]
 
@@ -19,12 +24,9 @@ class LinkCheckerSpider(scrapy.Spider):
         return spider
 
     def spider_closed(self):
-        print('----------')
+        print('closed----------')
 
     def parse(self, response):
-        """ Main function that parses downloaded pages """
-        # Print what the spider is doing
-        print(response.url)
         # Get all the <a> tags
         a_selectors = response.xpath("//a")
         # Loop on each tag
