@@ -85,7 +85,10 @@ class SnifferThread(QtCore.QObject):
         print('received start signal from window.')
         while self._isRunning:
             with self._lock:
-                sniff(iface=self.interface, filter="src port 1500", prn=self.getPacket, timeout=0.5, count=1)
+                try:
+                    sniff(iface=self.interface, filter="src port 1500", prn=self.getPacket, count=1, timeout=2)
+                except BaseException as e:
+                    logging.error("scapy.sniff error: %s" % e)
 
     def stop(self):
         self._isRunning = False
