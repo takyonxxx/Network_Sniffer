@@ -1,57 +1,32 @@
-import logging
-import scrapy
-from scrapy import signals
-from scrapy.crawler import CrawlerProcess
+import requests
+import urllib.request
+import time
+from bs4 import BeautifulSoup
+
+url_list = []
 
 
-class CrawlerItem(scrapy.Item):
-    referer = scrapy.Field()
-    file_urls = scrapy.Field()
+def links(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    soup.findAll('a')
+    url_list = soup.findAll('a')
+    for link in url_list:
+        print("Link --> {this_link}".format(this_link=link))
 
+    """html = urllib.urlopen(url).read()
 
-class LinkCheckerSpider(scrapy.Spider):
-    name = 'link_checker'
-
-    def __init__(self, url='https://github.com/takyonxxx/Network_Sniffer', *args, **kwargs):
-        super(LinkCheckerSpider, self).__init__(*args, **kwargs)
-        self.start_urls = [url]
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(LinkCheckerSpider, cls).from_crawler(crawler, *args, **kwargs)
-        # Register the spider_closed handler on spider_closed signal
-        crawler.signals.connect(spider.spider_closed, signals.spider_closed)
-        return spider
-
-    def spider_closed(self):
-        print('closed----------')
-
-    def parse(self, response):
-        # Get all the <a> tags
-        a_selectors = response.xpath("//a")
-        # Loop on each tag
-        for selector in a_selectors:
-            # Extract the link text
-            text = selector.xpath("text()").extract_first()
-            # Extract the link href
-            link = selector.xpath("@href").extract_first()
-            # Create a new Request object
-            request = response.follow(link, callback=print_this_link)
-            # Return it thanks to a generator
-            yield request
-
-
-def print_this_link(link):
-    print("Link --> {this_link}".format(this_link=link))
+    sHtml = str(html)
+    for i in range(len(sHtml) - 3):
+        if sHtml[i] == '<' and sHtml[i + 1] == 'a' and sHtml[i + 2] == ' ' and sHtml[i + 3] == 'h':
+            pos = sHtml[i:].find('</a>')
+            print(sHtml[i: i + pos + 4])
+            url_list.append(sHtml[i: i + pos + 4])"""
 
 
 def main():
-    # logging.getLogger('scrapy').setLevel(logging.WARNING)
-    logging.getLogger('scrapy').propagate = False
-    process = CrawlerProcess()
-    process.crawl(LinkCheckerSpider)
-    process.start()
+    links("https://www.imagescape.com/media/uploads/zinnia/2018/08/20/scrape_me.html")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

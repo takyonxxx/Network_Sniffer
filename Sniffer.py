@@ -106,13 +106,13 @@ def receivedPacket(pkt):
     data = str(pkt[TCP].payload)
     flag = get_flag(pkt)
 
-    textDisplay.append(info)
-    textDisplay.append('Data: ' + data)
-    textDisplay.append('Flag: ' + flag + '\n')
+    listWidget.append(info)
+    listWidget.append('Data: ' + data)
+    listWidget.append('Flag: ' + flag + '\n')
 
 
 def receivedThreadFinished():
-    textDisplay.append("Sniffer disconnected.\n")
+    listWidget.append("Sniffer disconnected.\n")
     btnConnect.setText("Connect")
 
 
@@ -125,7 +125,7 @@ def btnExitClicked(self):
 def btnConnectClicked(self):
     if not snifferWindow.isConnected:
         snifferWindow.connect()
-        textDisplay.append("Sniffer Connected.\n")
+        listWidget.append("Sniffer Connected.\n")
         btnConnect.setText("Disconnect")
     else:
         snifferWindow.disconnect()
@@ -182,11 +182,11 @@ if __name__ == "__main__":
     btnExit = QPushButton("Exit")
     btnExit.clicked.connect(btnExitClicked)
 
-    textDisplay = QTextBrowser()
-    textDisplay.setStyleSheet("font: 10pt; color: #00cccc; background-color: #001a1a;")
+    listWidget = QTextBrowser()
+    listWidget.setStyleSheet("font: 10pt; color: #00cccc; background-color: #001a1a;")
 
     layoutV = QVBoxLayout(snifferWindow.centralWidget())
-    layoutV.addWidget(textDisplay)
+    layoutV.addWidget(listWidget)
     layoutV.addWidget(btnConnect)
     layoutV.addWidget(btnExit)
     snifferWindow.show()
