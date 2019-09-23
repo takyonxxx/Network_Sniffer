@@ -1,14 +1,10 @@
 import sys
 import threading
-from concurrent.futures import thread
-
 import requests
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtGui import QTextCursor, QTextBlockFormat
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextBrowser, QVBoxLayout, QLineEdit, QTextEdit, QListWidget
 from bs4 import BeautifulSoup
 from pytube import YouTube
-from textract.colors import red
 
 youtubeWindow = None
 video = None
@@ -42,32 +38,9 @@ class YoutubeThread(QtCore.QObject):
         self.searchKey = key
 
 
-class DownloadThread(QtCore.QObject):
-    downloadFinishedSignal = QtCore.pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-        self._lock = threading.Lock()
-        self.videoLink = None
-        self._isRunning = False
-
-    @QtCore.pyqtSlot()
-    def run(self):
-        self._isRunning = True
-        downloader(self.videoLink)
-        self.stop()
-
-    def stop(self):
-        self._isRunning = False
-        with self._lock:
-            self.downloadFinishedSignal.emit()
-
-    def setVideoLink(self, link):
-        self.videoLink = link
-
-
 def downloader(video_link, down_dir='./', download=True):
     global video
+
     # initiate the class:
     try:
         # object creation using YouTube which was imported in the beginning
@@ -77,8 +50,9 @@ def downloader(video_link, down_dir='./', download=True):
 
     video = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').asc().first()
     video_title = video.title
-    print("Downloading Video --> {this_video}".format(this_video=video_title))
-    print('FileSize : ' + str(round(video.filesize / (1024 * 1024))) + 'MB')
+    textStatus.append("Downloading Video --> {this_video}".format(this_video=video_title))
+    textStatus.append('FileSize : ' + str(round(video.filesize / (1024 * 1024))) + 'MB')
+    QtWidgets.qApp.processEvents()
 
     if download:
         if down_dir is not None:
@@ -86,7 +60,8 @@ def downloader(video_link, down_dir='./', download=True):
         else:
             video.download()
 
-    print("Download complete...")
+    textStatus.append("Download complete...")
+    QtWidgets.qApp.processEvents()
 
 
 def searchYoutube(searchKey):
@@ -106,7 +81,8 @@ def searchYoutube(searchKey):
 def progress_function(stream, chunk, file_handle, bytes_remaining):
     size = video.filesize
     progress = (float(abs(bytes_remaining - size) / size)) * float(100)
-    print(round(progress, 1), '% done...')
+    textStatus.append(str(round(progress, 1)) + '% done...')
+    QtWidgets.qApp.processEvents()
 
 
 def receivedThreadFinished():
@@ -116,15 +92,13 @@ def receivedThreadFinished():
 
 
 def receivedSearchFinished(vids):
-    textStatus.append("Search finished...")
+    textStatus.append("Search finished...Click Link.")
     for video_link in vids:
         listWidget.addItem(video_link)
 
 
-def receivedDownloadFinished():
-    textStatus.append("Download Finished...")
-    youtubeWindow.dworkerThread.quit()
-    youtubeWindow.dworkerThread.wait()
+def receivedInfo(info):
+    textStatus.append(info)
 
 
 def btnExitClicked(self):
@@ -136,15 +110,15 @@ def btnSearchClicked(self):
     textDownload.clear()
 
     textStatus.append("Searching...")
-    youtubeWindow.worker.setSearchKey("paragliding+crash")
-    youtubeWindow.workerThread.start()
+    if not textSearch.text() is None:
+        youtubeWindow.worker.setSearchKey(textSearch.text())
+        youtubeWindow.workerThread.start()
 
 
 def btnDownloadClicked(self):
     video_link = textDownload.text()
     if video_link is not None:
-        youtubeWindow.dworker.setVideoLink(video_link)
-        youtubeWindow.dworkerThread.start()
+        downloader(video_link)
 
 
 def selectionChanged():
@@ -170,17 +144,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.worker.moveToThread(self.workerThread)
         self.workerThread.setTerminationEnabled(True)
 
-        self.dworker = DownloadThread()
-        self.dworkerThread = QtCore.QThread()  # Move the Worker object to the Thread object
-        self.dworkerThread.started.connect(self.dworker.run)  # Init worker run() at startup (optional)
-        self.dworker.downloadFinishedSignal.connect(receivedDownloadFinished)  # Connect your signals/slots
-        self.dworkerThread.moveToThread(self.dworkerThread)
-        self.dworkerThread.setTerminationEnabled(True)
-
 
 def main():
     global youtubeWindow
     global listWidget
+    global textSearch
     global textDownload
     global textStatus
 
@@ -200,6 +168,7 @@ def main():
     listWidget.setStyleSheet("font: 10pt; color: #00cccc; background-color: #001a1a;")
     listWidget.itemSelectionChanged.connect(selectionChanged)
 
+    textSearch = QLineEdit()
     textDownload = QLineEdit()
     textStatus = QTextBrowser()
     textStatus.setStyleSheet("font: 10pt; color: #00cccc; background-color: #001a1a;")
@@ -207,11 +176,13 @@ def main():
     layoutV = QVBoxLayout(youtubeWindow.centralWidget())
     layoutV.addWidget(listWidget)
     layoutV.addWidget(textStatus)
+    layoutV.addWidget(textSearch)
     layoutV.addWidget(btnSearch)
     layoutV.addWidget(textDownload)
     layoutV.addWidget(btnDownload)
     layoutV.addWidget(btnExit)
     youtubeWindow.show()
+
     sys.exit(app.exec_())
 
 
