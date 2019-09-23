@@ -1,31 +1,37 @@
-import requests
-import urllib.request
-import time
 from bs4 import BeautifulSoup
+from urllib.request import Request, urlopen, urlretrieve
+from urllib.error import URLError, HTTPError
 
 url_list = []
 
 
+def get_size(link):
+    try:
+        return int(urlopen(link).headers.get("Content-Length"))
+    except:
+        return 0
+
+
 def links(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    soup.findAll('a')
-    url_list = soup.findAll('a')
-    for link in url_list:
-        print("Link --> {this_link}".format(this_link=link))
+    req = Request(url)
+    try:
 
-    """html = urllib.urlopen(url).read()
-
-    sHtml = str(html)
-    for i in range(len(sHtml) - 3):
-        if sHtml[i] == '<' and sHtml[i + 1] == 'a' and sHtml[i + 2] == ' ' and sHtml[i + 3] == 'h':
-            pos = sHtml[i:].find('</a>')
-            print(sHtml[i: i + pos + 4])
-            url_list.append(sHtml[i: i + pos + 4])"""
+        response = urlopen(req)
+        soup = BeautifulSoup(response.read(), "html.parser")
+        soup.findAll('a')
+        url_list = soup.findAll('a')
+        for link in url_list:
+            print("Link --> {this_link}".format(this_link=link))
+    except HTTPError as e:
+        print('The server couldn\'t fulfill the request.')
+        print('Error code: ', e.code)
+    except URLError as e:
+        print('We failed to reach a server.')
+        print('Reason: ', e.reason)
 
 
 def main():
-    links("https://www.imagescape.com/media/uploads/zinnia/2018/08/20/scrape_me.html")
+    links("http://www.example.com/")
 
 
 if __name__ == '__main__':
