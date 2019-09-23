@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from itertools import chain
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
@@ -60,8 +61,10 @@ def main():
     logging.getLogger('scrapy').propagate = False
     process = CrawlerProcess()
     process.crawl(LinkCheckerSpider)
+    start = time.time()
     process.start()
-
+    end = time.time()
+    print("Time taken in seconds : ", (end - start))
 
 if __name__ == "__main__":
     main()

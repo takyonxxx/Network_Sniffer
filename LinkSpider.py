@@ -1,37 +1,45 @@
-from bs4 import BeautifulSoup
-from urllib.request import Request, urlopen, urlretrieve
-from urllib.error import URLError, HTTPError
+import requests
+import aiohttp
+import asyncio
+from parsel import Selector
+import time
 
-url_list = []
+start = time.time()
+all_images = {}  # website links as "keys" and images link as "values"
 
 
-def get_size(link):
+async def fetch(session, url):
     try:
-        return int(urlopen(link).headers.get("Content-Length"))
-    except:
-        return 0
+        async with session.get(url) as response:
+            return await response.text()
+    except Exception as exp:
+        return '<html> <html>'  # empty html for invalid uri case
 
 
-def links(url):
-    req = Request(url)
-    try:
-
-        response = urlopen(req)
-        soup = BeautifulSoup(response.read(), "html.parser")
-        soup.findAll('a')
-        url_list = soup.findAll('a')
-        for link in url_list:
-            print("Link --> {this_link}".format(this_link=link))
-    except HTTPError as e:
-        print('The server couldn\'t fulfill the request.')
-        print('Error code: ', e.code)
-    except URLError as e:
-        print('We failed to reach a server.')
-        print('Reason: ', e.reason)
+async def search(urls):
+    tasks = []
+    async with aiohttp.ClientSession() as session:
+        for url in urls:
+            tasks.append(fetch(session, url))
+        htmls = await asyncio.gather(*tasks)
+        for index, html in enumerate(htmls):
+            selector = Selector(html)
+            image_links = selector.xpath('//img/@src').getall()
+            for link in image_links:
+                if str(link):
+                    print("Link --> {this_link}".format(this_link=link))
 
 
 def main():
-    links("http://www.example.com/")
+    response = requests.get('https://github.com/takyonxxx?tab=repositories')
+    selector = Selector(response.text)
+    href_links = selector.xpath('//a/@href').getall()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(search(href_links))
+
+    print("All done !")
+    end = time.time()
+    print("Time taken in seconds : ", (end - start))
 
 
 if __name__ == '__main__':
