@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-import logging
 import time
 import requests
 import re
 from urllib.parse import urlparse
+
+from parsel import Selector
 
 
 class PyCrawler(object):
@@ -21,9 +22,12 @@ class PyCrawler(object):
 
     def get_links(self, url):
         html = self.get_html(url)
+        selector = Selector(html)
+        links = selector.xpath('//img/@src').getall()
+        # links = re.findall('''<a\s+(?:[^>]*?\s+)?href="([^"]*)"''', html)
         parsed = urlparse(url)
         base = f"{parsed.scheme}://{parsed.netloc}"
-        links = re.findall('''<a\s+(?:[^>]*?\s+)?href="([^"]*)"''', html)
+
         for i, link in enumerate(links):
             if not urlparse(link).netloc:
                 link_with_base = base + link
@@ -43,9 +47,8 @@ class PyCrawler(object):
             self.visited.add(link)
             info = self.extract_info(link)
 
-            print(f"""Link: {link}    
-            Description: {info.get('description')}    
-            """)
+            print(f"""Link: {link}
+Description: {info.get('description')}""")
 
             self.crawl(link)
 
