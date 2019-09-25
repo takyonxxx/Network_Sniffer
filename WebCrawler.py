@@ -3,8 +3,9 @@ import time
 import requests
 import re
 from urllib.parse import urlparse
-
 from parsel import Selector
+
+myDict = {}
 
 
 class PyCrawler(object):
@@ -25,6 +26,7 @@ class PyCrawler(object):
         selector = Selector(html)
         links = selector.xpath('//img/@src').getall()
         # links = re.findall('''<a\s+(?:[^>]*?\s+)?href="([^"]*)"''', html)
+
         parsed = urlparse(url)
         base = f"{parsed.scheme}://{parsed.netloc}"
 
@@ -42,18 +44,42 @@ class PyCrawler(object):
 
     def crawl(self, url):
         for link in self.get_links(url):
+
             if link in self.visited:
                 continue
-            self.visited.add(link)
-            info = self.extract_info(link)
 
-            print(f"""Link: {link}
-Description: {info.get('description')}""")
+            self.visited.add(link)
+            size = is_downloadable(link)
+            if not size == 0:
+                myDict[link] = size
 
             self.crawl(link)
 
     def start(self):
+        print("Searching links of : " + self.starting_url)
         self.crawl(self.starting_url)
+        sorted_link_list = sorted(myDict.items(), key=lambda x: x[1])
+        for link in sorted_link_list:
+            print("Downloadable Link -->", link[0], " : ", str("{0:.1f}".format(link[1])), " KB")
+            # info = self.extract_info(link)
+            # print(info.get('description'))
+
+
+def is_downloadable(url):
+    h = requests.head(url, allow_redirects=True)
+    header = h.headers
+    content_type = header.get('content-type')
+    content_length = header.get('content-length', None)
+    download_size = int(0)
+    if content_length:
+        download_size = int(str(content_length)) / 1024
+        return download_size
+
+    if 'text' in content_type.lower():
+        return 0
+    if 'html' in content_type.lower():
+        return 0
+    return download_size
 
 
 def main():
