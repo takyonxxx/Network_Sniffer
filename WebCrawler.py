@@ -73,12 +73,12 @@ def is_downloadable(url):
     download_size = int(0)
     if content_length:
         download_size = int(str(content_length)) / 1024
-        return download_size
 
     if 'text' in content_type.lower():
         return 0
     if 'html' in content_type.lower():
         return 0
+
     return download_size
 
 
@@ -87,7 +87,7 @@ def main():
     crawler = PyCrawler("https://github.com/takyonxxx?tab=repositories")
     crawler.start()
     end = time.time()
-    print("Time taken in seconds : ", (end - start))
+    print("Time taken in seconds : ", str("{0:.1f}".format(end - start)))
 
 
 if __name__ == "__main__":
