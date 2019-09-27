@@ -71,6 +71,7 @@ def is_downloadable(url):
     content_type = header.get('content-type')
     content_length = header.get('content-length', None)
     download_size = int(0)
+
     if content_length:
         download_size = int(str(content_length)) / 1024
 
