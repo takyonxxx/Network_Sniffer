@@ -58,6 +58,7 @@ def print_this_link(link):
 
 def main():
     # logging.getLogger('scrapy').setLevel(logging.WARNING)
+    
     logging.getLogger('scrapy').propagate = False
     process = CrawlerProcess()
     process.crawl(LinkCheckerSpider)
