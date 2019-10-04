@@ -26,7 +26,7 @@ def send_packet(protocol=None, src_ip=None, src_port=None, flags=None, dst_ip=No
 def main():
     while True:
         send_packet("tcp", src, sport, 'S', dst, dport, iface,
-                    "Send by Turkay : " + datetime.now().strftime("%m/%y %H:%M:%S"))
+                    "Send by Turkay Biliyor : " + datetime.now().strftime("%m/%y %H:%M:%S"))
         time.sleep(1)
 
 
