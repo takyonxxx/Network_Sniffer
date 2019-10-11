@@ -130,8 +130,6 @@ if __name__ == '__main__':
     except Exception as e:
         print("Exception: %s" % (e))
 
-    message = "Send by Turkay Biliyor : " + datetime.now().strftime("%m/%y %H:%M:%S")
-
     interface = "{4DD3818B-3014-43B4-A128-479203C716F3}"
     networkdetails = netifaces.ifaddresses(interface)
     ipaddress = networkdetails[2][0]['addr']
@@ -140,8 +138,10 @@ if __name__ == '__main__':
     ethhead = construct_ethernet_header(macaddress, macaddress, "0800")
     iphead = construct_ip_header(srcip, destip)
     tcphead = construct_tcp_header(srcip, destip, srcport, destport, 1, 0, [0, 0, 0, 0, 0, 0, 0, 1, 0])
-    tcppacket = construct_tcp_packet(ethhead, iphead, tcphead, message)
 
     while True:
+        message = "Send by Turkay Biliyor : " + datetime.now().strftime("%m/%y %H:%M:%S")
+        tcppacket = construct_tcp_packet(ethhead, iphead, tcphead, message)
+
         s.sendall(tcppacket)
         time.sleep(1)

@@ -11,7 +11,7 @@ sock.bind(server_address)
 sock.listen(1)
 
 while True:
-    print(sys.stderr, '\nwaiting for a connection')
+    print('waiting for a connection')
     connection, client_address = sock.accept()
 
     try:
@@ -31,14 +31,14 @@ while True:
             ip_head = pkt[14:34]
             ip_head_unpacked = struct.unpack("!1s1s1H1H2s1B1B2s4s4s", ip_head)  # Rip out all the fields in the IP
 
-            ver_head_length = binascii.hexlify(ip_head_unpacked[0])
-            service_field = binascii.hexlify(ip_head_unpacked[1])
+            ver_head_length = binascii.hexlify(ip_head_unpacked[0]).decode()
+            service_field = binascii.hexlify(ip_head_unpacked[1]).decode()
             total_length = str(ip_head_unpacked[2])
             identification = str(ip_head_unpacked[3])
-            flag_frag = binascii.hexlify(ip_head_unpacked[4])
+            flag_frag = binascii.hexlify(ip_head_unpacked[4]).decode()
             ttl = str(ip_head_unpacked[5])
             protocol = str(ip_head_unpacked[6])
-            checkSum = binascii.hexlify(ip_head_unpacked[7])
+            checkSum = binascii.hexlify(ip_head_unpacked[7]).decode()
             src_ip = socket.inet_ntoa(ip_head_unpacked[8])
             dst_ip = socket.inet_ntoa(ip_head_unpacked[9])
 
@@ -50,11 +50,11 @@ while True:
             src_port = str(tcp_hdr[1])
             seq_no = str(tcp_hdr[2])
             ack_no = str(tcp_hdr[3])
-            head_length_6_point = binascii.hexlify(tcp_hdr[4])
+            head_length_6_point = binascii.hexlify(tcp_hdr[4]).decode()
             window_size = str(tcp_hdr[5])
-            checksum = binascii.hexlify(tcp_hdr[6])
+            checksum = binascii.hexlify(tcp_hdr[6]).decode()
             urgent_pointer = str(tcp_hdr[7])
-            data = pkt[54:]
+            data = str(pkt[54:].decode())
 
             print("\nEthernet Header")
             print("Source MAC: ", srcMac)
