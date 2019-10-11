@@ -1,8 +1,14 @@
 #!/usr/bin/python
+import binascii
 import socket
 import struct
 import time
 from datetime import datetime
+from struct import pack
+
+import netifaces
+
+iface = "Ethernet"
 
 
 def checksum(msg):
@@ -22,18 +28,17 @@ def checksum(msg):
     return cs
 
 
-"""
-Construct an IP header.
-For a TCP packet, only source and destination IPs need to be set.
-source_ip = str IP of sender
-dest_ip   = str IP of receiver
-ihl       = Internet Header Length. Default is 5 (20 bytes).
-ver       = IP version. default is 4
-pid       = ID of the packet. So that split packets may be reassembled in order.
-offs      = Fragment offset if any. default 0
-ttl       = Time To Live for the packet. default 255
-proto     = Protocol for contained packet. default is TCP.
-"""
+def formatMAC(mac):
+    return mac.lower().replace(':', '')
+
+
+def construct_ethernet_header(eth_src, eth_dst, eth_prt):
+    e_src = formatMAC(eth_src)
+    e_dst = formatMAC(eth_dst)
+    e_prt = eth_prt
+
+    eth_pack = struct.pack("!6s6s2s", binascii.unhexlify(e_dst), binascii.unhexlify(e_src), binascii.unhexlify(e_prt))
+    return eth_pack
 
 
 def construct_ip_header(source_ip, dest_ip, ihl=5, ver=4, pid=0, offs=0, ttl=255, proto=socket.IPPROTO_TCP):
@@ -55,22 +60,6 @@ def construct_ip_header(source_ip, dest_ip, ihl=5, ver=4, pid=0, offs=0, ttl=255
     ip_header = struct.pack('!BBHHHBBH4s4s', ip_ihl_ver, ip_tos, ip_tot_len, ip_id, ip_frag_off, ip_ttl, ip_proto,
                             ip_check, ip_saddr, ip_daddr)
     return ip_header
-
-
-"""
-Construct a TCP header.
-source_ip = str IP of sender
-dest_ip   = str IP of receiver
-srcp      = source port number
-dstp      = receiver port number
-seq       = TCP sequence number: set a random number for first package and the ack number of previous received ACK package otherwise.
-ackno     = TCP ack number: previous received seq + number of bytes received
-flags     = TCP flags in an array with the structure [HS,CWR,ECE,URG,ACK,PSH,RST,SYN,FIN]
-user_data = string with the data to send
-doff      = data offset, default 0
-wsize     = max window size for sender
-urgptr    = Urgent pointer if URG flag is set
-"""
 
 
 def construct_tcp_header(source_ip, dest_ip, srcp, dstp, seq, ackno, flags, user_data="", doff=5, wsize=5840, urgptr=0):
@@ -116,9 +105,9 @@ def construct_tcp_header(source_ip, dest_ip, srcp, dstp, seq, ackno, flags, user
     return tcp_header
 
 
-def construct_tcp_packet(ip_header, tcp_header, user_data=""):
+def construct_tcp_packet(eth_header, ip_header, tcp_header, user_data=""):
     packet = ''
-    packet = ip_header + tcp_header + user_data.encode()
+    packet = eth_header + ip_header + tcp_header + user_data.encode()
     return packet
 
 
@@ -126,7 +115,8 @@ if __name__ == '__main__':
 
     # Create Raw Socket
     TCP_IP = '127.0.0.1'
-    TCP_PORT = 3500
+    TCP_PORT = 10000
+    BUFFER_SIZE = 1024
 
     srcip = TCP_IP
     destip = TCP_IP
@@ -134,17 +124,24 @@ if __name__ == '__main__':
     destport = TCP_PORT
 
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-        s.connect((TCP_IP, TCP_PORT))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = (TCP_IP, TCP_PORT)
+        s.connect(server_address)
     except Exception as e:
         print("Exception: %s" % (e))
 
     message = "Send by Turkay Biliyor : " + datetime.now().strftime("%m/%y %H:%M:%S")
 
+    interface = "{4DD3818B-3014-43B4-A128-479203C716F3}"
+    networkdetails = netifaces.ifaddresses(interface)
+    ipaddress = networkdetails[2][0]['addr']
+    macaddress = networkdetails[-1000][0]['addr']
+
+    ethhead = construct_ethernet_header(macaddress, macaddress, "0800")
     iphead = construct_ip_header(srcip, destip)
     tcphead = construct_tcp_header(srcip, destip, srcport, destport, 1, 0, [0, 0, 0, 0, 0, 0, 0, 1, 0])
-    tcppacket = construct_tcp_packet(iphead, tcphead, message)
+    tcppacket = construct_tcp_packet(ethhead, iphead, tcphead, message)
 
     while True:
-        s.sendto(tcppacket, (destip, 0))
+        s.sendall(tcppacket)
         time.sleep(1)
